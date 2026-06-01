@@ -6,8 +6,8 @@ import { Search, X, MapPin, Phone, MessageCircle, ExternalLink } from "lucide-re
 import { PropertyCard } from "@/components/ui/PropertyCard";
 import { SectionLabel } from "@/components/ui/SectionHeading";
 import { FadeUp, StaggerGroup } from "@/components/ui/FadeUp";
-import { properties, kawasanList, hadapList, siapLabel } from "@/data/properties";
-import type { Property } from "@/data/properties";
+import { kawasanList, hadapList, siapLabel } from "@/data/properties";
+import type { Property } from "@/types/database";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -17,7 +17,7 @@ const formatRupiah = (angka: number) =>
     minimumFractionDigits: 0
   }).format(angka);
 
-export function PropertiClient() {
+export function PropertiClient({ initialProperties }: { initialProperties: Property[] }) {
   const [q, setQ] = useState("");
   const [tipe, setTipe] = useState("Semua");
   const [status, setStatus] = useState("Semua");
@@ -30,21 +30,21 @@ export function PropertiClient() {
   const [selected, setSelected] = useState<Property | null>(null);
 
   const filtered = useMemo(() => {
-    let list = properties.filter((p) => {
-      if (q && !`${p.nama} ${p.kawasan}`.toLowerCase().includes(q.toLowerCase())) return false;
+    let list = initialProperties.filter((p) => {
+      if (q && !`${p.nama_property} ${p.kawasan}`.toLowerCase().includes(q.toLowerCase())) return false;
       if (tipe !== "Semua" && p.tipe !== tipe) return false;
       if (status === "Tersedia" && p.status !== "in_stock") return false;
       if (status === "Terjual" && p.status !== "sold_out") return false;
       if (kawasan !== "Semua" && p.kawasan !== kawasan) return false;
       if (hadap !== "Semua" && !p.hadap.includes(hadap)) return false;
       if (siap !== "Semua" && p.siap !== siap) return false;
-      if (hargaMax && p.harga > Number(hargaMax)) return false;
+      if (hargaMax && p.price > Number(hargaMax)) return false;
       if (carport === "Ya" && !p.carport) return false;
       if (carport === "Tidak" && p.carport) return false;
       return true;
     });
-    if (sort === "Harga Terendah") list = [...list].sort((a, b) => a.harga - b.harga);
-    if (sort === "Harga Tertinggi") list = [...list].sort((a, b) => b.harga - a.harga);
+    if (sort === "Harga Terendah") list = [...list].sort((a, b) => a.price - b.price);
+    if (sort === "Harga Tertinggi") list = [...list].sort((a, b) => b.price - a.price);
     return list;
   }, [q, tipe, status, kawasan, hadap, siap, hargaMax, carport, sort]);
 
@@ -143,7 +143,7 @@ export function PropertiClient() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <p className="text-[13px] text-text-muted">
-              Menampilkan {filtered.length} dari {properties.length} properti
+              Menampilkan {filtered.length} dari {initialProperties.length} properti
             </p>
             <select value={sort} onChange={(e) => setSort(e.target.value)} className="text-sm bg-white border border-[#E0E0E0] rounded-md px-3 py-2 focus:border-gold outline-none">
               <option>Terbaru</option>
@@ -229,8 +229,8 @@ function PropertyModal({ property: p, onClose }: { property: Property, onClose: 
 
           <div className="relative h-[280px] rounded-lg overflow-hidden mb-6">
             <Image
-              src={p.image}
-              alt={`Foto ${p.nama} di kawasan ${p.kawasan}`}
+              src={(p.tipe === "Ruko" ? "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800" : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800")}
+              alt={`Foto ${p.nama_property} di kawasan ${p.kawasan}`}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 800px"
@@ -239,7 +239,7 @@ function PropertyModal({ property: p, onClose }: { property: Property, onClose: 
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h2 className="font-display text-[28px] text-text-primary leading-tight">{p.nama}</h2>
+              <h2 className="font-display text-[28px] text-text-primary leading-tight">{p.nama_property}</h2>
               <div className="flex items-center gap-1.5 text-sm text-text-muted mt-2">
                 <MapPin className="w-4 h-4" /> {p.kawasan}
               </div>
@@ -264,7 +264,7 @@ function PropertyModal({ property: p, onClose }: { property: Property, onClose: 
             </div>
 
             <div>
-              <p className="font-display text-4xl font-bold text-gold leading-tight">{formatRupiah(p.harga)}</p>
+              <p className="font-display text-4xl font-bold text-gold leading-tight">{formatRupiah(p.price)}</p>
               <p className="text-xs text-text-muted mt-1">Harga dapat dinegosiasi</p>
 
               <div className="space-y-3 mt-6">

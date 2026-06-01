@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Phone, Mail, Clock, Globe, Instagram, Facebook, Youtube, MessageCircle, CheckCircle, Loader2, Plus, Minus } from "lucide-react";
 import { SectionLabel, SectionHeading } from "@/components/ui/SectionHeading";
 import { FadeUp } from "@/components/ui/FadeUp";
 import { faqs } from "@/data/faqs";
 import { cn } from "@/lib/utils";
+import { submitContactAction } from "@/actions/contact";
 
 export function KontakClient() {
   return (
@@ -110,32 +111,19 @@ function FaqItem({ q, a }: { q: string, a: string }) {
 }
 
 function ContactForm() {
-  const [form, setForm] = useState({ nama: "", email: "", hp: "", tipe: "", anggaran: "", pesan: "" });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const [state, formAction, isPending] = useActionState(submitContactAction, { error: null, success: false });
   const [success, setSuccess] = useState(false);
 
-  const handle = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm({ ...form, [k]: e.target.value });
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const err: Record<string, string> = {};
-    if (!form.nama.trim()) err.nama = "Nama wajib diisi";
-    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) err.email = "Email tidak valid";
-    if (!form.hp.trim() || form.hp.replace(/\D/g, "").length < 10) err.hp = "Nomor HP minimal 10 digit";
-    if (!form.pesan.trim()) err.pesan = "Pesan wajib diisi";
-    setErrors(err);
-    if (Object.keys(err).length) return;
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    setSuccess(true);
-    setForm({ nama: "", email: "", hp: "", tipe: "", anggaran: "", pesan: "" });
-    setTimeout(() => setSuccess(false), 5000);
-  };
+  useEffect(() => {
+    if (state.success) {
+      setSuccess(true);
+      const t = setTimeout(() => setSuccess(false), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [state.success]);
 
   return (
-    <form onSubmit={submit} className="bg-white border border-[#E0E0E0] rounded-xl p-8 md:p-10 space-y-5">
+    <form action={formAction} className="bg-white border border-[#E0E0E0] rounded-xl p-8 md:p-10 space-y-5">
       <div>
         <SectionLabel>Kirim Pesan</SectionLabel>
         <h2 className="font-display text-[28px] text-text-primary mt-3">Ada Pertanyaan?</h2>
@@ -148,40 +136,46 @@ function ContactForm() {
         </div>
       )}
 
+      {state.error && (
+        <div className="bg-red-50 border-l-[3px] border-red-accent rounded p-4 flex gap-3">
+          <p className="text-sm text-red-accent">{state.error}</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="Nama Lengkap *" error={errors.nama}>
-          <input value={form.nama} onChange={handle("nama")} className={inputCls(errors.nama)} />
+        <Field label="Nama Lengkap *">
+          <input name="nama" required className={inputCls()} />
         </Field>
-        <Field label="Email *" error={errors.email}>
-          <input type="email" value={form.email} onChange={handle("email")} className={inputCls(errors.email)} />
+        <Field label="Email *">
+          <input type="email" name="email" required className={inputCls()} />
         </Field>
-        <Field label="Nomor HP *" error={errors.hp}>
-          <input value={form.hp} onChange={handle("hp")} className={inputCls(errors.hp)} />
+        <Field label="Nomor HP *">
+          <input name="nomor_hp" required className={inputCls()} />
         </Field>
         <Field label="Jenis Properti">
-          <select value={form.tipe} onChange={handle("tipe")} className={inputCls()}>
+          <select name="jenis_properti" className={inputCls()}>
             <option value="">Pilih...</option>
             <option>Ruko</option><option>Villa</option><option>Keduanya</option><option>Masih Mencari</option>
           </select>
         </Field>
         <Field label="Kisaran Anggaran" className="md:col-span-2">
-          <select value={form.anggaran} onChange={handle("anggaran")} className={inputCls()}>
+          <select name="kisaran_anggaran" className={inputCls()}>
             <option value="">Pilih...</option>
             <option>&lt; 500 Juta</option><option>500 Juta – 1 Miliar</option>
             <option>1 – 2 Miliar</option><option>&gt; 2 Miliar</option>
           </select>
         </Field>
-        <Field label="Pesan *" error={errors.pesan} className="md:col-span-2">
-          <textarea rows={5} value={form.pesan} onChange={handle("pesan")} className={inputCls(errors.pesan)} />
+        <Field label="Pesan *" className="md:col-span-2">
+          <textarea rows={5} name="pesan" required className={inputCls()} />
         </Field>
       </div>
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={isPending}
         className="w-full bg-gold text-text-primary py-3.5 rounded-md font-semibold text-[15px] hover:bg-gold-light transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
       >
-        {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Mengirim...</> : "Kirim Pesan"}
+        {isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Mengirim...</> : "Kirim Pesan"}
       </button>
     </form>
   );

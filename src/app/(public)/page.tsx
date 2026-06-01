@@ -5,18 +5,20 @@ import { ValueProposition } from "@/components/sections/ValueProposition";
 import { StatsSection } from "@/components/sections/StatsSection";
 import { TestimonialsSection } from "@/components/sections/TestimonialsSection";
 import { CtaBanner } from "@/components/sections/CtaBanner";
+import { getFeaturedProperties } from "@/actions/properties";
 
 export const metadata = {
   title: "Prime Property — Properti Premium Sumatera Utara",
   description: "Jual-beli Ruko & Villa premium di Medan dan sekitarnya. Konsultan properti terpercaya dengan 12 tahun pengalaman.",
 };
 
-export default function Home() {
+export default async function Home() {
+  const featured = await getFeaturedProperties();
   return (
     <>
       <HeroSection />
       <MarqueeTicker />
-      <FeaturedProperties />
+      <FeaturedProperties initialProperties={featured} />
       <ValueProposition />
       <StatsSection />
       <TestimonialsSection />

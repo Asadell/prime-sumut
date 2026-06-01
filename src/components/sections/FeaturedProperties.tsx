@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { properties } from "@/data/properties";
+import type { Property } from "@/types/database";
 import { PropertyCard } from "@/components/ui/PropertyCard";
 import { SectionLabel, SectionHeading } from "@/components/ui/SectionHeading";
 import { FadeUp, StaggerGroup } from "@/components/ui/FadeUp";
 import { Button } from "@/components/ui/Button";
 
-export function FeaturedProperties() {
-  const featured = properties.slice(0, 6);
+export function FeaturedProperties({ initialProperties: featured }: { initialProperties: Property[] }) {
   return (
     <section className="bg-bg-soft py-24 px-6 lg:px-10">
       <div className="max-w-7xl mx-auto">

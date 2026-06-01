@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Building2, PlusCircle, UserCog, LogOut, 
   Bell, CheckCircle, XCircle, MapPin, Search,
   Pencil, Trash2, X, Lock, Loader2, UserPlus, Key, UserX, AlertTriangle, ExternalLink, Check
 } from "lucide-react";
-import { properties as initialProperties, kawasanList, hadapList, siapLabel } from "@/data/properties";
-import type { Property } from "@/data/properties";
-import { admins as initialAdmins } from "@/data/admins";
-import type { Admin } from "@/data/admins";
+import { kawasanList, hadapList, siapLabel } from "@/data/properties";
+import type { Property, Profile } from "@/types/database";
+import { logoutAction } from "@/actions/auth";
+import { createPropertyAction, updatePropertyAction, deletePropertyAction } from "@/actions/properties";
+import { createAdminAction, toggleAdminStatusAction } from "@/actions/admin-management";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -25,22 +26,15 @@ const formatTanggal = (str: string) =>
     day: 'numeric', month: 'short', year: 'numeric'
   });
 
-export function DashboardClient() {
+export function DashboardClient({ user, initialProperties, initialAdmins }: { user: Profile, initialProperties: Property[], initialAdmins: Profile[] }) {
   const router = useRouter();
-  const [role, setRole] = useState("superadmin");
+  const role = user.role;
   const [tab, setTab] = useState("overview"); 
-  const [propertiesList, setPropertiesList] = useState<Property[]>(initialProperties as any);
-  const [adminList, setAdminList] = useState<Admin[]>(initialAdmins);
+  const propertiesList = initialProperties;
+  const adminList = initialAdmins;
   const [toast, setToast] = useState<{message: string, sub?: string} | null>(null);
 
-  useEffect(() => {
-    const r = localStorage.getItem("prime_role");
-    if (!r) router.push("/agent/login");
-    else setRole(r);
-  }, [router]);
-
-  const logout = () => { localStorage.removeItem("prime_role"); router.push("/agent/login"); };
-  const switchRole = (r: string) => { localStorage.setItem("prime_role", r); setRole(r); };
+  const logout = () => { logoutAction(); };
 
   const showToast = (message: string, sub?: string) => {
     setToast({ message, sub });
@@ -80,18 +74,12 @@ export function DashboardClient() {
         </nav>
 
         <div className="px-4 pb-4">
-          <div className="mb-6">
-             <div className="text-[10px] text-white/20 uppercase tracking-widest mb-2 px-2">Mode Demo</div>
-             <div className="flex gap-2">
-                <button onClick={() => switchRole("admin")} className={cn("flex-1 text-[11px] py-1.5 rounded border transition-all", role === "admin" ? "border-white/70 text-white opacity-70" : "border-[#2E2E2E] text-white opacity-50")}>Admin</button>
-                <button onClick={() => switchRole("superadmin")} className={cn("flex-1 text-[11px] py-1.5 rounded transition-all", role === "superadmin" ? "bg-[#C9A961] text-[#1A1A1A] font-semibold" : "border border-[#2E2E2E] text-white opacity-50")}>Superadmin</button>
-             </div>
-          </div>
+          
 
           <div className="flex items-center gap-3 px-2 mb-4">
-            <div className="w-9 h-9 rounded-full bg-[#C9A961] text-[#1A1A1A] font-display font-bold flex items-center justify-center shrink-0">AF</div>
+            <div className="w-9 h-9 rounded-full bg-[#C9A961] text-[#1A1A1A] font-display font-bold flex items-center justify-center shrink-0">{user.full_name.substring(0,2).toUpperCase()}</div>
             <div className="leading-tight overflow-hidden">
-              <p className="text-[13px] font-semibold text-white truncate">Ahmad Fauzi</p>
+              <p className="text-[13px] font-semibold text-white truncate">{user.full_name}</p>
               <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 inline-block uppercase", role === "superadmin" ? "bg-[#C9A961] text-[#1A1A1A]" : "bg-[#2E2E2E] text-white")}>
                 {role}
               </span>
@@ -113,7 +101,7 @@ export function DashboardClient() {
            </h1>
            <div className="flex items-center gap-5">
               <button className="text-[#6B6B6B] hover:text-[#1A1A1A]"><Bell className="w-5 h-5" /></button>
-              <div className="w-8 h-8 rounded-full bg-[#C9A961] text-[#1A1A1A] flex items-center justify-center font-bold text-sm cursor-pointer">AF</div>
+              <div className="w-8 h-8 rounded-full bg-[#C9A961] text-[#1A1A1A] flex items-center justify-center font-bold text-sm cursor-pointer">{user.full_name.substring(0,2).toUpperCase()}</div>
            </div>
         </header>
 
@@ -121,8 +109,8 @@ export function DashboardClient() {
         <div className="p-8 flex-1 w-full max-w-full">
           {tab === "overview" && <OverviewTab properties={propertiesList} />}
           {tab === "properti" && <PropertiesTab properties={propertiesList} role={role} setTab={setTab} />}
-          {tab === "tambah" && <AddPropertyTab role={role} setTab={setTab} properties={propertiesList} setProperties={setPropertiesList} showToast={showToast} />}
-          {tab === "kelola_admin" && <ManageAdminsTab role={role} admins={adminList} setAdmins={setAdminList} showToast={showToast} />}
+          {tab === "tambah" && <AddPropertyTab role={role} setTab={setTab} properties={propertiesList} showToast={showToast} />}
+          {tab === "kelola_admin" && <ManageAdminsTab role={role} admins={adminList} showToast={showToast} />}
         </div>
       </main>
 
@@ -151,7 +139,7 @@ function OverviewTab({ properties }: { properties: Property[] }) {
   const soldOut = properties.filter(p => p.status === "sold_out").length;
   const uniqueKawasan = new Set(properties.map(p => p.kawasan)).size;
 
-  const recent = [...properties].sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()).slice(0, 5);
+  const recent = [...properties].sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime()).slice(0, 5);
   
   const byKawasan = properties.reduce((acc, p) => {
     acc[p.kawasan] = (acc[p.kawasan] || 0) + 1;
@@ -197,10 +185,10 @@ function OverviewTab({ properties }: { properties: Property[] }) {
                <tbody className="text-[13px]">
                  {recent.map(p => (
                    <tr key={p.id} className="border-t border-[#E0E0E0] hover:bg-[#F5F5F5]">
-                     <td className="px-4 py-3 font-medium text-[#1A1A1A]">{p.nama}</td>
+                     <td className="px-4 py-3 font-medium text-[#1A1A1A]">{p.nama_property}</td>
                      <td className="px-4 py-3 text-[#6B6B6B]">{p.kawasan}</td>
                      <td className="px-4 py-3 text-[#6B6B6B]">{p.tipe}</td>
-                     <td className="px-4 py-3 text-[#1A1A1A]">{formatRupiah(p.harga)}</td>
+                     <td className="px-4 py-3 text-[#1A1A1A]">{formatRupiah(p.price)}</td>
                      <td className="px-4 py-3">
                         <span className={cn("px-2 py-1 rounded text-[11px] font-medium", p.status === "in_stock" ? "bg-[#ECFDF5] text-[#16A34A]" : "bg-[#FEF2F2] text-[#B33A3A]")}>
                            {p.status === "in_stock" ? "Tersedia" : "Terjual"}
@@ -239,6 +227,8 @@ function OverviewTab({ properties }: { properties: Property[] }) {
 // TAB: PROPERTIES
 // ==========================================
 function PropertiesTab({ properties, role, setTab }: { properties: Property[], role: string, setTab: (t: string) => void }) {
+  const [isPending, startTransition] = useTransition();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [tipe, setTipe] = useState("Semua");
   const [status, setStatus] = useState("Semua");
@@ -255,12 +245,12 @@ function PropertiesTab({ properties, role, setTab }: { properties: Property[], r
 
   const filtered = useMemo(() => {
     let list = properties.filter((p) => {
-      if (q && !`${p.nama} ${p.kawasan} ${p.group||""}`.toLowerCase().includes(q.toLowerCase())) return false;
+      if (q && !`${p.nama_property} ${p.kawasan} ${p.group_name||""}`.toLowerCase().includes(q.toLowerCase())) return false;
       if (tipe !== "Semua" && p.tipe !== tipe) return false;
       if (status === "Tersedia" && p.status !== "in_stock") return false;
       if (status === "Terjual" && p.status !== "sold_out") return false;
       if (kawasan !== "Semua" && p.kawasan !== kawasan) return false;
-      if (hargaMax && p.harga > Number(hargaMax)) return false;
+      if (hargaMax && p.price > Number(hargaMax)) return false;
       if (hadap !== "Semua" && !p.hadap.includes(hadap)) return false;
       if (siap !== "Semua" && p.siap !== siap) return false;
       if (carport === "Ada" && !p.carport) return false;
@@ -268,10 +258,10 @@ function PropertiesTab({ properties, role, setTab }: { properties: Property[], r
       return true;
     });
 
-    if (sort === "Harga ↑") list = [...list].sort((a, b) => a.harga - b.harga);
-    else if (sort === "Harga ↓") list = [...list].sort((a, b) => b.harga - a.harga);
-    else if (sort === "Nama A-Z") list = [...list].sort((a, b) => a.nama.localeCompare(b.nama));
-    else list = [...list].sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+    if (sort === "Harga ↑") list = [...list].sort((a, b) => a.price - b.price);
+    else if (sort === "Harga ↓") list = [...list].sort((a, b) => b.price - a.price);
+    else if (sort === "Nama A-Z") list = [...list].sort((a, b) => a.nama_property.localeCompare(b.nama_property));
+    else list = [...list].sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
     return list;
   }, [properties, q, tipe, status, kawasan, hargaMax, hadap, siap, carport, sort]);
 
@@ -377,8 +367,8 @@ function PropertiesTab({ properties, role, setTab }: { properties: Property[], r
                {paginated.map(p => (
                   <tr key={p.id} onClick={()=>setSelectedProp(p)} className="border-b border-[#E0E0E0] hover:bg-[#FAFAFA] cursor-pointer group">
                      <td className="px-4 py-3">
-                        <div className="text-[14px] font-semibold text-[#1A1A1A] truncate">{p.nama}</div>
-                        <div className="text-[12px] text-[#6B6B6B] truncate">{p.kawasan} {p.group ? `- ${p.group}` : ''}</div>
+                        <div className="text-[14px] font-semibold text-[#1A1A1A] truncate">{p.nama_property}</div>
+                        <div className="text-[12px] text-[#6B6B6B] truncate">{p.kawasan} {p.group_name ? `- ${p.group_name}` : ''}</div>
                      </td>
                      <td className="px-4 py-3">
                         <span className={cn("px-2 py-0.5 rounded text-[11px] font-medium", p.tipe === "Ruko" ? "bg-[#EFF6FF] text-[#1D4ED8]" : "bg-[#F5F3FF] text-[#7C3AED]")}>
@@ -387,7 +377,7 @@ function PropertiesTab({ properties, role, setTab }: { properties: Property[], r
                      </td>
                      <td className="px-4 py-3 text-[13px] text-[#1A1A1A]">{p.lebar} × {p.panjang} m</td>
                      <td className="px-4 py-3 text-[13px] text-[#6B6B6B] truncate">{p.hadap.join(", ")}</td>
-                     <td className="px-4 py-3 text-[13px] font-semibold text-[#C9A961]">{formatRupiah(p.harga)}</td>
+                     <td className="px-4 py-3 text-[13px] font-semibold text-[#C9A961]">{formatRupiah(p.price)}</td>
                      <td className="px-4 py-3">
                         <span className={cn("px-2 py-0.5 rounded text-[11px] font-medium block w-max", p.status === "in_stock" ? "bg-[#ECFDF5] text-[#16A34A]" : "bg-[#FEF2F2] text-[#B33A3A]")}>
                            {p.status === "in_stock" ? "Tersedia" : "Terjual"}
@@ -405,7 +395,7 @@ function PropertiesTab({ properties, role, setTab }: { properties: Property[], r
                         <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                            <div className="flex gap-3">
                               <button className="text-[#6B6B6B] hover:text-[#C9A961]"><Pencil className="w-[18px] h-[18px]" /></button>
-                              <button className="text-[#6B6B6B] hover:text-[#B33A3A]"><Trash2 className="w-[18px] h-[18px]" /></button>
+                              <button onClick={(e) => { e.stopPropagation(); setDeleteId(p.id); }} className="text-[#6B6B6B] hover:text-[#B33A3A]"><Trash2 className="w-[18px] h-[18px]" /></button>
                            </div>
                         </td>
                      )}
@@ -431,6 +421,28 @@ function PropertiesTab({ properties, role, setTab }: { properties: Property[], r
          </div>
       </div>
 
+
+      <AnimatePresence>
+         {deleteId && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-[#1A1A1A]/40 backdrop-blur-sm flex justify-center items-center p-4">
+               <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white rounded-xl max-w-[400px] w-full p-8 shadow-2xl text-center">
+                  <AlertTriangle className="w-10 h-10 mx-auto mb-4 text-[#B33A3A]" />
+                  <h3 className="text-[18px] font-semibold text-[#1A1A1A] mb-2">Hapus Properti</h3>
+                  <p className="text-[14px] text-[#6B6B6B] mb-8">Apakah Anda yakin ingin menghapus properti ini? Aksi ini memindahkan properti ke trash.</p>
+                  <div className="flex justify-center gap-3">
+                     <button disabled={isPending} onClick={() => {
+                        startTransition(async () => {
+                           await deletePropertyAction(deleteId);
+                           setDeleteId(null);
+                        });
+                     }} className="font-semibold px-6 py-2.5 rounded text-[14px] text-white bg-[#B33A3A] disabled:opacity-70">{isPending ? "Menghapus..." : "Hapus"}</button>
+                     <button disabled={isPending} onClick={() => setDeleteId(null)} className="text-[#6B6B6B] px-4 font-medium text-[14px]">Batal</button>
+                  </div>
+               </motion.div>
+            </motion.div>
+         )}
+      </AnimatePresence>
+
       {/* Drawer */}
       <AnimatePresence>
          {selectedProp && (
@@ -449,10 +461,10 @@ function PropertiesTab({ properties, role, setTab }: { properties: Property[], r
                         </div>
                      </div>
                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                     <img src={selectedProp.image} alt={selectedProp.nama} className="w-full h-[220px] object-cover rounded-lg mb-6" />
-                     <h2 className="font-display text-[24px] text-[#1A1A1A] leading-tight mb-2">{selectedProp.nama}</h2>
+                     <img src={(selectedProp.tipe === "Ruko" ? "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800" : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800")} alt={selectedProp.nama_property} className="w-full h-[220px] object-cover rounded-lg mb-6" />
+                     <h2 className="font-display text-[24px] text-[#1A1A1A] leading-tight mb-2">{selectedProp.nama_property}</h2>
                      <div className="flex items-center gap-1.5 text-[14px] text-[#6B6B6B] mb-6">
-                        <MapPin className="w-4 h-4" /> {selectedProp.kawasan} {selectedProp.group && `— ${selectedProp.group}`}
+                        <MapPin className="w-4 h-4" /> {selectedProp.kawasan} {selectedProp.group_name && `— ${selectedProp.group_name}`}
                      </div>
 
                      <div className="grid grid-cols-3 gap-3 mb-6">
@@ -471,7 +483,7 @@ function PropertiesTab({ properties, role, setTab }: { properties: Property[], r
                         ))}
                      </div>
                      <div className="text-[14px] font-bold text-[#1A1A1A] mb-4">Luas Total: {(selectedProp.lebar * selectedProp.panjang).toFixed(1)} m²</div>
-                     <div className="font-display text-[28px] font-bold text-[#C9A961] mb-6">{formatRupiah(selectedProp.harga)}</div>
+                     <div className="font-display text-[28px] font-bold text-[#C9A961] mb-6">{formatRupiah(selectedProp.price)}</div>
 
                      {selectedProp.maps_link && (
                         <a href={selectedProp.maps_link} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 w-full py-2.5 border border-[#C9A961] text-[#C9A961] rounded-md font-semibold text-[13px] hover:bg-[#FEF9EC] transition-colors mb-6">
@@ -481,7 +493,7 @@ function PropertiesTab({ properties, role, setTab }: { properties: Property[], r
                      
                      <div className="space-y-1">
                         <div className="text-[12px] text-[#6B6B6B]">Unit / Keterangan: <strong className="text-[#1A1A1A] font-normal">{selectedProp.unit || "-"}</strong></div>
-                        <div className="text-[12px] text-[#6B6B6B]">Ditambahkan: <strong className="text-[#1A1A1A] font-normal">{formatTanggal(selectedProp.createdAt!)} oleh {selectedProp.createdBy}</strong></div>
+                        <div className="text-[12px] text-[#6B6B6B]">Ditambahkan: <strong className="text-[#1A1A1A] font-normal">{formatTanggal(selectedProp.created_at!)} oleh {selectedProp.created_by}</strong></div>
                      </div>
                   </div>
                   {role === "admin" && (
@@ -500,7 +512,7 @@ function PropertiesTab({ properties, role, setTab }: { properties: Property[], r
 // ==========================================
 // TAB: ADD PROPERTY (Superadmin Only)
 // ==========================================
-function AddPropertyTab({ role, setTab, properties, setProperties, showToast }: { role: string, setTab: (t: string) => void, properties: Property[], setProperties: (p: Property[]) => void, showToast: (m: string, s?: string) => void }) {
+function AddPropertyTab({ role, setTab, properties, showToast }: { role: string, setTab: (t: string) => void, properties: Property[], showToast: (m: string, s?: string) => void }) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
      nama: "", group: "", lebar: "", panjang: "", tipe: "Ruko", tingkat: "", carport: false, harga: "", status: "in_stock", siap: "siap_huni", kawasan: "Krakatau", maps_link: "", unit: ""
@@ -517,31 +529,38 @@ function AddPropertyTab({ role, setTab, properties, setProperties, showToast }: 
      );
   }
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
      e.preventDefault();
      if (!form.nama.trim() || !form.lebar || !form.panjang || hadap.length===0 || !form.tingkat || !form.harga) {
         showToast("Form tidak lengkap", "Pastikan semua field wajib (*) terisi.");
         return;
      }
      setLoading(true);
-     setTimeout(() => {
-        const newProp = {
-           id: Date.now(),
-           ...form,
-           nama: form.nama.trim(),
-           group: form.group.trim(),
-           unit: form.unit.trim(),
-           maps_link: form.maps_link.trim(),
-           lebar: Number(form.lebar), panjang: Number(form.panjang), tingkat: Number(form.tingkat), harga: Number(form.harga),
-           hadap,
-           createdAt: new Date().toISOString(), createdBy: "Ahmad Fauzi",
-           image: form.tipe === "Ruko" ? "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800" : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800"
-        } as Property;
-        setProperties([newProp, ...properties]);
-        setLoading(false);
+     const formData = new FormData();
+     formData.append("nama_property", form.nama);
+     formData.append("group_name", form.group);
+     formData.append("lebar", form.lebar);
+     formData.append("panjang", form.panjang);
+     formData.append("hadap", hadap.join(","));
+     formData.append("tipe", form.tipe);
+     formData.append("tingkat", form.tingkat);
+     formData.append("carport", form.carport ? "true" : "false");
+     formData.append("harga", form.harga); // mapped to price in server action but prompt uses price? Let's use price! Wait, Server action uses form.get('price')
+     formData.append("price", form.harga);
+     formData.append("status", form.status);
+     formData.append("siap", form.siap);
+     formData.append("kawasan", form.kawasan);
+     formData.append("maps_link", form.maps_link);
+     formData.append("unit", form.unit);
+     
+     const res = await createPropertyAction({ error: null, success: false }, formData);
+     setLoading(false);
+     if (res.success) {
         setTab("properti");
         showToast("Properti berhasil ditambahkan!", form.nama);
-     }, 1200);
+     } else {
+        showToast("Gagal menambahkan", res.error || "");
+     }
   };
 
   return (
@@ -651,8 +670,9 @@ function AddPropertyTab({ role, setTab, properties, setProperties, showToast }: 
 // ==========================================
 // TAB: MANAGE ADMINS (Superadmin Only)
 // ==========================================
-function ManageAdminsTab({ role, admins, setAdmins, showToast }: { role: string, admins: Admin[], setAdmins: (a: Admin[]) => void, showToast: (m: string, s?: string) => void }) {
-  const [modal, setModal] = useState<{type: 'add'|'reset'|'disable'|'delete', id?: number} | null>(null);
+function ManageAdminsTab({ role, admins, showToast }: { role: string, admins: Profile[], showToast: (m: string, s?: string) => void }) {
+  const [modal, setModal] = useState<{type: 'add'|'reset'|'disable'|'delete', id?: string} | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   if (role !== "superadmin") {
      return (
@@ -664,15 +684,23 @@ function ManageAdminsTab({ role, admins, setAdmins, showToast }: { role: string,
      );
   }
 
-  const toggleStatus = (id: number) => {
-     setAdmins(admins.map(a => a.id === id ? { ...a, status: a.status === "active" ? "inactive" : "active" } : a));
+  const toggleStatus = (id: string, currentStatus: boolean) => {
+     startTransition(async () => {
+       await toggleAdminStatusAction(id, !currentStatus);
+       showToast("Status Diperbarui", "Status admin berhasil diubah.");
+     });
   };
 
   const handleAction = () => {
-     if (modal?.type === 'delete') setAdmins(admins.filter(a => a.id !== modal.id));
-     if (modal?.type === 'disable') setAdmins(admins.map(a => a.id === modal.id ? { ...a, status: "inactive" } : a));
-     setModal(null);
-     showToast("Berhasil", "Aksi pada admin telah dijalankan.");
+     if (modal?.type === 'disable' && modal.id) {
+       startTransition(async () => {
+         await toggleAdminStatusAction(modal.id!, false);
+         setModal(null);
+         showToast("Berhasil", "Akun admin dinonaktifkan.");
+       });
+     } else {
+       setModal(null);
+     }
   };
 
   return (
@@ -700,9 +728,9 @@ function ManageAdminsTab({ role, admins, setAdmins, showToast }: { role: string,
                     <tr key={a.id} className="border-b border-[#E0E0E0] last:border-0 hover:bg-[#FAFAFA]">
                        <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 rounded-full bg-[#E0E0E0] text-[#1A1A1A] font-bold text-[11px] flex items-center justify-center shrink-0">{a.nama.split(" ").map(n=>n[0]).join("").substring(0,2)}</div>
+                             <div className="w-8 h-8 rounded-full bg-[#E0E0E0] text-[#1A1A1A] font-bold text-[11px] flex items-center justify-center shrink-0">{a.full_name.split(" ").map(n=>n[0]).join("").substring(0,2)}</div>
                              <div>
-                                <div className="text-[14px] font-semibold text-[#1A1A1A]">{a.nama}</div>
+                                <div className="text-[14px] font-semibold text-[#1A1A1A]">{a.full_name}</div>
                                 <div className="text-[12px] text-[#6B6B6B]">{a.email}</div>
                              </div>
                           </div>
@@ -711,14 +739,14 @@ function ManageAdminsTab({ role, admins, setAdmins, showToast }: { role: string,
                           <span className="bg-[#EFF6FF] text-[#1D4ED8] text-[11px] font-semibold px-2 py-1 rounded uppercase">{a.role}</span>
                        </td>
                        <td className="px-6 py-4">
-                          <button onClick={()=>toggleStatus(a.id)} className="flex items-center gap-2 group outline-none">
-                             <div className={cn("w-8 h-4 rounded-full relative transition-colors", a.status === "active" ? "bg-[#16A34A]" : "bg-[#E0E0E0]")}>
-                                <div className={cn("w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all", a.status === "active" ? "left-4" : "left-1")}></div>
+                          <button onClick={()=>toggleStatus(a.id, a.is_active)} className="flex items-center gap-2 group outline-none">
+                             <div className={cn("w-8 h-4 rounded-full relative transition-colors", a.is_active ? "bg-[#16A34A]" : "bg-[#E0E0E0]")}>
+                                <div className={cn("w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all", a.is_active ? "left-4" : "left-1")}></div>
                              </div>
-                             <span className={cn("text-[12px] font-medium", a.status === "active" ? "text-[#16A34A]" : "text-[#6B6B6B]")}>{a.status === "active" ? "Aktif" : "Nonaktif"}</span>
+                             <span className={cn("text-[12px] font-medium", a.is_active ? "text-[#16A34A]" : "text-[#6B6B6B]")}>{a.is_active ? "Aktif" : "Nonaktif"}</span>
                           </button>
                        </td>
-                       <td className="px-6 py-4 text-[13px] text-[#6B6B6B]">{formatTanggal(a.createdAt)}</td>
+                       <td className="px-6 py-4 text-[13px] text-[#6B6B6B]">{formatTanggal(a.created_at)}</td>
                        <td className="px-6 py-4">
                           <div className="flex gap-4">
                              <button onClick={()=>setModal({type:'reset', id:a.id})} className="text-[#6B6B6B] hover:text-[#C9A961]" title="Reset Password"><Key className="w-[18px] h-[18px]" /></button>
@@ -739,16 +767,20 @@ function ManageAdminsTab({ role, admins, setAdmins, showToast }: { role: string,
                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-[#1A1A1A]/40 backdrop-blur-sm flex justify-center items-center p-4">
                     <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white rounded-xl max-w-[480px] w-full p-8 shadow-2xl">
                        <h3 className="text-[18px] font-semibold text-[#1A1A1A] mb-6">Tambah Akun Admin Baru</h3>
-                       <form onSubmit={(e)=>{
-                          e.preventDefault(); 
-                          const form = e.target as any;
-                          setAdmins([{id:Date.now(), nama:form.n.value.trim(), email:form.e.value.trim(), role:"admin", status:"active", createdAt:new Date().toISOString()}, ...admins]);
-                          setModal(null); showToast("Admin Ditambahkan!", form.n.value.trim());
+                       <form action={async (formData) => {
+                          const fullName = formData.get("full_name") as string;
+                          const res = await createAdminAction({ error: null, success: false }, formData);
+                          if (res.success) {
+                             setModal(null);
+                             showToast("Admin Ditambahkan!", fullName);
+                          } else {
+                             showToast("Gagal Menambahkan Admin", res.error || "");
+                          }
                        }} className="space-y-4">
-                          <div><label className="text-[12px] font-semibold uppercase tracking-wide text-[#1A1A1A] block mb-1">Nama Lengkap *</label><input required name="n" className="w-full bg-[#F5F5F5] border border-[#E0E0E0] rounded px-3.5 py-2.5 text-[14px] outline-none focus:border-[#C9A961]" /></div>
-                          <div><label className="text-[12px] font-semibold uppercase tracking-wide text-[#1A1A1A] block mb-1">Email *</label><input required type="email" name="e" className="w-full bg-[#F5F5F5] border border-[#E0E0E0] rounded px-3.5 py-2.5 text-[14px] outline-none focus:border-[#C9A961]" /></div>
-                          <div><label className="text-[12px] font-semibold uppercase tracking-wide text-[#1A1A1A] block mb-1">Password *</label><input required type="password" minLength={8} className="w-full bg-[#F5F5F5] border border-[#E0E0E0] rounded px-3.5 py-2.5 text-[14px] outline-none focus:border-[#C9A961]" /></div>
-                          <div><label className="text-[12px] font-semibold uppercase tracking-wide text-[#1A1A1A] block mb-1">Konfirmasi Password *</label><input required type="password" minLength={8} className="w-full bg-[#F5F5F5] border border-[#E0E0E0] rounded px-3.5 py-2.5 text-[14px] outline-none focus:border-[#C9A961]" /></div>
+                          <div><label className="text-[12px] font-semibold uppercase tracking-wide text-[#1A1A1A] block mb-1">Nama Lengkap *</label><input required name="full_name" className="w-full bg-[#F5F5F5] border border-[#E0E0E0] rounded px-3.5 py-2.5 text-[14px] outline-none focus:border-[#C9A961]" /></div>
+                          <div><label className="text-[12px] font-semibold uppercase tracking-wide text-[#1A1A1A] block mb-1">Email *</label><input required type="email" name="email" className="w-full bg-[#F5F5F5] border border-[#E0E0E0] rounded px-3.5 py-2.5 text-[14px] outline-none focus:border-[#C9A961]" /></div>
+                          <div><label className="text-[12px] font-semibold uppercase tracking-wide text-[#1A1A1A] block mb-1">Password *</label><input required name="password" type="password" minLength={8} className="w-full bg-[#F5F5F5] border border-[#E0E0E0] rounded px-3.5 py-2.5 text-[14px] outline-none focus:border-[#C9A961]" /></div>
+                          <div><label className="text-[12px] font-semibold uppercase tracking-wide text-[#1A1A1A] block mb-1">Konfirmasi Password *</label><input required name="password" type="password" minLength={8} className="w-full bg-[#F5F5F5] border border-[#E0E0E0] rounded px-3.5 py-2.5 text-[14px] outline-none focus:border-[#C9A961]" /></div>
                           <p className="text-[12px] text-[#6B6B6B] italic pt-2">Akun baru akan langsung aktif dan bisa login ke portal.</p>
                           <div className="flex gap-3 pt-4 border-t border-[#E0E0E0] mt-6">
                              <button type="submit" className="bg-[#C9A961] text-[#1A1A1A] font-semibold px-6 py-2.5 rounded text-[14px]">Buat Akun</button>

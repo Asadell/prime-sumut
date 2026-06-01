@@ -4,7 +4,7 @@ import { MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { siapLabel } from "@/data/properties";
-import type { Property } from "@/data/properties";
+import type { Property } from "@/types/database";
 import Image from "next/image";
 
 const formatRupiah = (angka: number) =>
@@ -27,8 +27,8 @@ export function PropertyCard({ property, onClick }: { property: Property; onClic
     >
       <div className="relative overflow-hidden h-[200px] rounded-t-lg">
         <Image
-          src={property.image}
-          alt={`Foto ${property.nama} di kawasan ${property.kawasan}`}
+          src={(property.tipe === "Ruko" ? "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800" : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800")}
+          alt={`Foto ${property.nama_property} di kawasan ${property.kawasan}`}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -47,7 +47,7 @@ export function PropertyCard({ property, onClick }: { property: Property; onClic
         </span>
       </div>
       <div className="p-4 space-y-2">
-        <h3 className="text-base font-semibold text-text-primary font-sans">{property.nama}</h3>
+        <h3 className="text-base font-semibold text-text-primary font-sans">{property.nama_property}</h3>
         <div className="flex items-center gap-1.5 text-[13px] text-text-muted">
           <MapPin className="w-3.5 h-3.5" />
           <span>{property.kawasan}</span>
@@ -56,7 +56,7 @@ export function PropertyCard({ property, onClick }: { property: Property; onClic
           L: {property.lebar}m × P: {property.panjang}m · Hadap: {property.hadap.join(", ")} · {property.tingkat} Lantai
         </p>
         <div className="pt-1">
-          <p className="text-xl font-bold text-gold">{formatRupiah(property.harga)}</p>
+          <p className="text-xl font-bold text-gold">{formatRupiah(property.price)}</p>
           <p className="text-xs text-text-muted">
             {property.carport ? "Carport tersedia" : siapLabel[property.siap]}
           </p>
