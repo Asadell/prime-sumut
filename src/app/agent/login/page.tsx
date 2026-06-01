@@ -3,7 +3,7 @@ import { getSessionUser } from "@/actions/auth";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Agent Login — Prime Property",
+  title: "Agent Login - Prime Property",
 };
 
 export default async function AgentLogin() {

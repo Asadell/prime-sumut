@@ -10,6 +10,27 @@ import { kawasanList, hadapList, siapLabel } from "@/data/properties";
 import type { Property } from "@/types/database";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { Select } from "@/components/ui/Select";
+
+const kawasanOptions = [
+  { value: "Semua", label: "Kawasan: Semua" },
+  ...kawasanList.map((k) => ({ value: k, label: k }))
+];
+const hadapOptions = [
+  { value: "Semua", label: "Hadap: Semua" },
+  ...hadapList.map((h) => ({ value: h, label: `Hadap: ${h}` }))
+];
+const siapOptions = [
+  { value: "Semua", label: "Kesiapan: Semua" },
+  { value: "siap_huni", label: "Siap Huni" },
+  { value: "siap_kosong", label: "Siap Kosong" },
+  { value: "siap_huni_renovasi", label: "Siap Renovasi" }
+];
+const sortOptions = [
+  { value: "Terbaru", label: "Urutkan: Terbaru" },
+  { value: "Harga Terendah", label: "Harga Terendah" },
+  { value: "Harga Tertinggi", label: "Harga Tertinggi" }
+];
 
 const formatRupiah = (angka: number) =>
   new Intl.NumberFormat('id-ID', {
@@ -90,33 +111,22 @@ export function PropertiClient({ initialProperties }: { initialProperties: Prope
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Cari nama, kawasan..."
-                className="w-full pl-9 pr-3 py-2.5 text-sm bg-bg-soft border border-[#E0E0E0] rounded-md focus:border-gold outline-none"
+                className="w-full pl-9 pr-3 py-2.5 text-sm bg-bg-soft border border-[#E0E0E0] rounded-lg focus:border-gold focus:ring-1 focus:ring-gold hover:border-gold transition-all outline-none"
               />
             </div>
 
             <PillToggle value={tipe} setValue={setTipe} options={["Semua", "Ruko", "Villa"]} activeClass="bg-text-primary text-white" />
             <PillToggle value={status} setValue={setStatus} options={["Semua", "Tersedia", "Terjual"]} activeClass="bg-gold text-text-primary" />
 
-            <select value={kawasan} onChange={(e) => setKawasan(e.target.value)} className="text-sm bg-bg-soft border border-[#E0E0E0] rounded-md px-3 py-2.5 focus:border-gold outline-none">
-              <option>Semua</option>
-              {kawasanList.map((k) => <option key={k}>{k}</option>)}
-            </select>
-            <select value={hadap} onChange={(e) => setHadap(e.target.value)} className="text-sm bg-bg-soft border border-[#E0E0E0] rounded-md px-3 py-2.5 focus:border-gold outline-none">
-              <option value="Semua">Hadap: Semua</option>
-              {hadapList.map((h) => <option key={h} value={h}>Hadap: {h}</option>)}
-            </select>
-            <select value={siap} onChange={(e) => setSiap(e.target.value)} className="text-sm bg-bg-soft border border-[#E0E0E0] rounded-md px-3 py-2.5 focus:border-gold outline-none">
-              <option value="Semua">Siap: Semua</option>
-              <option value="siap_huni">Siap Huni</option>
-              <option value="siap_kosong">Siap Kosong</option>
-              <option value="siap_huni_renovasi">Siap Renovasi</option>
-            </select>
+            <Select value={kawasan} onChange={setKawasan} options={kawasanOptions} className="w-full sm:w-[180px]" />
+            <Select value={hadap} onChange={setHadap} options={hadapOptions} className="w-full sm:w-[160px]" />
+            <Select value={siap} onChange={setSiap} options={siapOptions} className="w-full sm:w-[180px]" />
             <input
               type="number"
               value={hargaMax}
               onChange={(e) => setHargaMax(e.target.value)}
               placeholder="Harga max (Rp)"
-              className="text-sm bg-bg-soft border border-[#E0E0E0] rounded-md px-3 py-2.5 w-44 focus:border-gold outline-none"
+              className="text-sm bg-bg-soft border border-[#E0E0E0] rounded-lg px-3.5 py-2.5 w-44 focus:border-gold focus:ring-1 focus:ring-gold hover:border-gold transition-all outline-none"
             />
             <PillToggle value={carport} setValue={setCarport} options={["Semua", "Ya", "Tidak"]} activeClass="bg-text-primary text-white" label="Carport:" />
 
@@ -145,11 +155,7 @@ export function PropertiClient({ initialProperties }: { initialProperties: Prope
             <p className="text-[13px] text-text-muted">
               Menampilkan {filtered.length} dari {initialProperties.length} properti
             </p>
-            <select value={sort} onChange={(e) => setSort(e.target.value)} className="text-sm bg-white border border-[#E0E0E0] rounded-md px-3 py-2 focus:border-gold outline-none">
-              <option>Terbaru</option>
-              <option>Harga Terendah</option>
-              <option>Harga Tertinggi</option>
-            </select>
+            <Select value={sort} onChange={setSort} options={sortOptions} className="w-[180px] bg-white" />
           </div>
 
           {filtered.length === 0 ? (

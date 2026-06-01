@@ -29,7 +29,7 @@ export function TestimonialsSection() {
                     <Star key={i} className="w-3.5 h-3.5 fill-gold" />
                   ))}
                 </div>
-                <p className="text-[13px] text-white/50">— {t.nama} · {t.detail}</p>
+                <p className="text-[13px] text-white/50">- {t.nama} · {t.detail}</p>
               </div>
             </motion.div>
           ))}

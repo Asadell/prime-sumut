@@ -61,7 +61,7 @@ export interface ContactMessage {
   created_at:       string
 }
 
-// Form types (untuk create/update — tanpa field auto-generate)
+// Form types (untuk create/update - tanpa field auto-generate)
 export type PropertyInsert = Omit<Property, 'id' | 'deleted_at' | 'created_at' | 'updated_at' | 'created_by'>
 export type PropertyUpdate = Partial<PropertyInsert>
 

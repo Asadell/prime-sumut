@@ -6,7 +6,7 @@ import { FadeUp, StaggerGroup, fadeItem } from "@/components/ui/FadeUp";
 import { motion } from "framer-motion";
 
 const items = [
-  { icon: Award, title: "12 Tahun Pengalaman", desc: "Pemahaman mendalam terhadap pasar properti Sumatera Utara — dari kawasan industri hingga hunian premium." },
+  { icon: Award, title: "12 Tahun Pengalaman", desc: "Pemahaman mendalam terhadap pasar properti Sumatera Utara - dari kawasan industri hingga hunian premium." },
   { icon: ShieldCheck, title: "Transaksi Aman & Transparan", desc: "Setiap transaksi didampingi tim legal kami. Sertifikat diverifikasi, proses jelas, tidak ada biaya tersembunyi." },
   { icon: MapPin, title: "Spesialis Pasar Lokal", desc: "Fokus di Sumatera Utara membuat kami mengenal setiap kawasan, potensi investasi, dan tren harga terkini." },
 ];

@@ -20,7 +20,7 @@ export function TentangClient() {
               <span className="text-gold">Transaksi Properti.</span>
             </h1>
             <p className="mt-8 text-lg text-white/60 max-w-2xl">
-              Kami percaya bahwa membeli properti adalah keputusan besar. Itulah mengapa kami hadir bukan hanya sebagai agen — melainkan sebagai mitra perjalanan investasi Anda.
+              Kami percaya bahwa membeli properti adalah keputusan besar. Itulah mengapa kami hadir bukan hanya sebagai agen - melainkan sebagai mitra perjalanan investasi Anda.
             </p>
           </FadeUp>
         </div>
@@ -34,7 +34,7 @@ export function TentangClient() {
             <SectionHeading className="text-3xl md:text-[40px]">Lahir dari Kepercayaan, Tumbuh bersama Klien.</SectionHeading>
             <div className="mt-6 space-y-5 text-[15px] text-text-muted leading-[1.8]">
               <p>Prime Property didirikan pada tahun 2012 di Medan, Sumatera Utara, oleh sekelompok profesional properti yang frustasi melihat praktik agensi yang tidak transparan dan merugikan pembeli.</p>
-              <p>Selama 12 tahun, kami telah membantu lebih dari 500 keluarga dan investor menemukan properti yang tepat — dari ruko bisnis di kawasan strategis hingga villa premium untuk hunian keluarga.</p>
+              <p>Selama 12 tahun, kami telah membantu lebih dari 500 keluarga dan investor menemukan properti yang tepat - dari ruko bisnis di kawasan strategis hingga villa premium untuk hunian keluarga.</p>
               <p>Fokus kami tidak pernah berubah: integritas, transparansi, dan hasil nyata untuk setiap klien yang mempercayai kami.</p>
             </div>
           </FadeUp>
@@ -43,7 +43,7 @@ export function TentangClient() {
               <p className="font-display italic text-xl md:text-[22px] text-text-primary leading-relaxed">
                 &quot;Properti bukan hanya bata dan semen. Ia adalah tempat keluarga bertumbuh, dan bisnis berkembang.&quot;
               </p>
-              <p className="mt-4 text-[13px] text-text-muted">— Pendiri Prime Property</p>
+              <p className="mt-4 text-[13px] text-text-muted">- Pendiri Prime Property</p>
             </div>
             <div className="grid grid-cols-2 gap-4 mt-6">
               {[

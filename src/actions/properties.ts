@@ -34,7 +34,7 @@ async function requireSuperadmin() {
   return user.id
 }
 
-// Ambil semua properti aktif (untuk halaman publik — Server Component)
+// Ambil semua properti aktif (untuk halaman publik - Server Component)
 export async function getPublicProperties() {
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -76,7 +76,7 @@ export async function getPropertyById(id: string) {
   return data
 }
 
-// CREATE — hanya superadmin
+// CREATE - hanya superadmin
 export async function createPropertyAction(
   _prevState: { error: string | null; success: boolean },
   formData: FormData
@@ -129,7 +129,7 @@ export async function createPropertyAction(
   }
 }
 
-// UPDATE — hanya superadmin
+// UPDATE - hanya superadmin
 export async function updatePropertyAction(
   id: string,
   _prevState: { error: string | null; success: boolean },
@@ -137,10 +137,11 @@ export async function updatePropertyAction(
 ): Promise<{ error: string | null; success: boolean }> {
   try {
     const userId = await requireSuperadmin()
-    const supabase = await createClient()
+    // Gunakan adminClient agar tidak terblokir RLS
+    const admin = createAdminClient()
 
     // Ambil data lama untuk audit log
-    const { data: oldData } = await supabase
+    const { data: oldData } = await admin
       .from('properties')
       .select('*')
       .eq('id', id)
@@ -165,7 +166,7 @@ export async function updatePropertyAction(
       catatan:       (formData.get('catatan') as string)?.trim() || null,
     }
 
-    const { data: newData, error } = await supabase
+    const { data: newData, error } = await admin
       .from('properties')
       .update(updates)
       .eq('id', id)
@@ -191,19 +192,20 @@ export async function updatePropertyAction(
   }
 }
 
-// DELETE (soft delete) — hanya superadmin
+// DELETE (soft delete) - hanya superadmin
 export async function deletePropertyAction(id: string): Promise<{ error: string | null }> {
   try {
     const userId = await requireSuperadmin()
-    const supabase = await createClient()
+    // Gunakan adminClient agar tidak terblokir RLS
+    const admin = createAdminClient()
 
-    const { data: oldData } = await supabase
+    const { data: oldData } = await admin
       .from('properties')
       .select('nama_property')
       .eq('id', id)
       .single()
 
-    const { error } = await supabase
+    const { error } = await admin
       .from('properties')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)

@@ -8,7 +8,7 @@ import { CtaBanner } from "@/components/sections/CtaBanner";
 import { getFeaturedProperties } from "@/actions/properties";
 
 export const metadata = {
-  title: "Prime Property — Properti Premium Sumatera Utara",
+  title: "Prime Property - Properti Premium Sumatera Utara",
   description: "Jual-beli Ruko & Villa premium di Medan dan sekitarnya. Konsultan properti terpercaya dengan 12 tahun pengalaman.",
 };
 

@@ -8,6 +8,7 @@ import { FadeUp } from "@/components/ui/FadeUp";
 import { faqs } from "@/data/faqs";
 import { cn } from "@/lib/utils";
 import { submitContactAction } from "@/actions/contact";
+import { Select } from "@/components/ui/Select";
 
 export function KontakClient() {
   return (
@@ -20,7 +21,7 @@ export function KontakClient() {
               Siap Membantu<br /><span className="text-gold">Anda Hari Ini.</span>
             </h1>
             <p className="mt-8 text-lg text-white/60 max-w-2xl">
-              Tidak perlu brief yang sempurna. Ceritakan apa yang Anda cari — kami bantu temukan pilihan terbaik.
+              Tidak perlu brief yang sempurna. Ceritakan apa yang Anda cari - kami bantu temukan pilihan terbaik.
             </p>
           </FadeUp>
         </div>
@@ -110,9 +111,28 @@ function FaqItem({ q, a }: { q: string, a: string }) {
   );
 }
 
+
+const jenisPropertiOptions = [
+  { value: "", label: "Pilih..." },
+  { value: "Ruko", label: "Ruko" },
+  { value: "Villa", label: "Villa" },
+  { value: "Keduanya", label: "Keduanya" },
+  { value: "Masih Mencari", label: "Masih Mencari" }
+];
+
+const kisaranAnggaranOptions = [
+  { value: "", label: "Pilih..." },
+  { value: "< 500 Juta", label: "< 500 Juta" },
+  { value: "500 Juta – 1 Miliar", label: "500 Juta – 1 Miliar" },
+  { value: "1 – 2 Miliar", label: "1 – 2 Miliar" },
+  { value: "> 2 Miliar", label: "> 2 Miliar" }
+];
+
 function ContactForm() {
   const [state, formAction, isPending] = useActionState(submitContactAction, { error: null, success: false });
   const [success, setSuccess] = useState(false);
+  const [jenisProperti, setJenisProperti] = useState("");
+  const [kisaranAnggaran, setKisaranAnggaran] = useState("");
 
   useEffect(() => {
     if (state.success) {
@@ -153,17 +173,10 @@ function ContactForm() {
           <input name="nomor_hp" required className={inputCls()} />
         </Field>
         <Field label="Jenis Properti">
-          <select name="jenis_properti" className={inputCls()}>
-            <option value="">Pilih...</option>
-            <option>Ruko</option><option>Villa</option><option>Keduanya</option><option>Masih Mencari</option>
-          </select>
+          <Select name="jenis_properti" value={jenisProperti} onChange={setJenisProperti} options={jenisPropertiOptions} />
         </Field>
         <Field label="Kisaran Anggaran" className="md:col-span-2">
-          <select name="kisaran_anggaran" className={inputCls()}>
-            <option value="">Pilih...</option>
-            <option>&lt; 500 Juta</option><option>500 Juta – 1 Miliar</option>
-            <option>1 – 2 Miliar</option><option>&gt; 2 Miliar</option>
-          </select>
+          <Select name="kisaran_anggaran" value={kisaranAnggaran} onChange={setKisaranAnggaran} options={kisaranAnggaranOptions} />
         </Field>
         <Field label="Pesan *" className="md:col-span-2">
           <textarea rows={5} name="pesan" required className={inputCls()} />
@@ -182,7 +195,7 @@ function ContactForm() {
 }
 
 const inputCls = (error?: string) => cn(
-  "w-full bg-bg-soft border rounded-md px-3 py-2.5 text-sm outline-none transition-colors",
+  "w-full bg-bg-soft border rounded-lg px-3 py-2.5 text-sm outline-none transition-colors",
   error ? "border-red-accent focus:border-red-accent" : "border-[#E0E0E0] focus:border-gold",
 );
 

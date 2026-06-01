@@ -80,3 +80,37 @@ export async function getAllAdmins() {
   if (error) throw new Error(error.message)
   return data ?? []
 }
+
+// Hapus admin
+export async function deleteAdminAction(adminId: string): Promise<{ error: string | null }> {
+  try {
+    await requireSuperadmin()
+    const admin = createAdminClient()
+
+    const { error } = await admin.auth.admin.deleteUser(adminId)
+    if (error) return { error: error.message }
+
+    revalidatePath('/agent/dashboard')
+    return { error: null }
+  } catch (err) {
+    return { error: (err as Error).message }
+  }
+}
+
+// Reset password admin
+export async function resetAdminPasswordAction(adminId: string, newPassword: string): Promise<{ error: string | null }> {
+  try {
+    await requireSuperadmin()
+    const admin = createAdminClient()
+
+    const { error } = await admin.auth.admin.updateUserById(adminId, {
+      password: newPassword
+    })
+    
+    if (error) return { error: error.message }
+
+    return { error: null }
+  } catch (err) {
+    return { error: (err as Error).message }
+  }
+}

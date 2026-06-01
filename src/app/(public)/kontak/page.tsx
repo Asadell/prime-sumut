@@ -1,7 +1,7 @@
 import { KontakClient } from "./KontakClient";
 
 export const metadata = {
-  title: "Kontak — Prime Property",
+  title: "Kontak - Prime Property",
   description: "Hubungi Prime Property untuk konsultasi properti gratis. Kantor di Medan, Sumatera Utara.",
 };
 
