@@ -35,10 +35,10 @@ export function KontakClient() {
               <h2 className="font-display text-[28px] text-text-primary mt-3">Kami Ada untuk Anda</h2>
               <div className="mt-6 space-y-4 text-sm text-text-primary">
                 <Item icon={MapPin}>Jl. Krakatau No. 88, Medan Timur, Sumatera Utara 20238</Item>
-                <Item icon={Phone}>+62 812 3456 7890</Item>
-                <Item icon={Mail}>hello@primeproperty.id</Item>
+                <Item icon={Phone}><a href="tel:+6281234567890" className="hover:text-gold transition-colors">+62 812 3456 7890</a></Item>
+                <Item icon={Mail}><a href="mailto:hello@primeproperty.id" className="hover:text-gold transition-colors">hello@primeproperty.id</a></Item>
                 <Item icon={Clock}>Senin – Sabtu, 09.00 – 17.00 WIB</Item>
-                <Item icon={Globe}>wa.me/6281234567890</Item>
+                <Item icon={Globe}><a href="https://wa.me/6281234567890" target="_blank" rel="noreferrer" className="hover:text-gold transition-colors">wa.me/6281234567890</a></Item>
               </div>
               <div className="flex gap-3 mt-6">
                 {[Instagram, Facebook, Youtube, MessageCircle].map((Icon, i) => (
@@ -152,7 +152,7 @@ function ContactForm() {
       {success && (
         <div className="bg-green-50 border-l-[3px] border-green-500 rounded p-4 flex gap-3">
           <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-          <p className="text-sm text-text-primary">Pesan terkirim! Tim kami akan menghubungi Anda dalam 1×24 jam.</p>
+          <p className="text-sm text-text-primary">Pesan terkirim, tim kami akan menghubungi Anda.</p>
         </div>
       )}
 

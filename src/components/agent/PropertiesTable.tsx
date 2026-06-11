@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useTransition, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { 
   PlusCircle, Search, X, Check, Pencil, Trash2, MapPin, AlertTriangle, ExternalLink 
 } from "lucide-react";
@@ -44,7 +44,8 @@ const sortOptions = [
   { value: "Terbaru", label: "Terbaru" },
   { value: "Harga ↑", label: "Harga ↑" },
   { value: "Harga ↓", label: "Harga ↓" },
-  { value: "Nama A-Z", label: "Nama A-Z" }
+  { value: "Nama A-Z", label: "Nama A-Z" },
+  { value: "Status", label: "Status" }
 ];
 const perPageOptions = [
   { value: "25", label: "25" },
@@ -65,23 +66,51 @@ const formatTanggal = (str: string) =>
 
 export function PropertiesTable({ properties, role, showToast }: { properties: Property[], role: string, showToast?: (m: string, s?: string) => void }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteName, setDeleteName] = useState<string>("");
-  const [q, setQ] = useState("");
-  const [tipe, setTipe] = useState("Semua");
-  const [status, setStatus] = useState("Semua");
-  const [kawasan, setKawasan] = useState("Semua");
-  const [hargaMax, setHargaMax] = useState("");
-  const [lebarMin, setLebarMin] = useState("");
-  const [hadap, setHadap] = useState("Semua");
-  const [siap, setSiap] = useState("Semua");
-  const [carport, setCarport] = useState("Semua");
-  const [sort, setSort] = useState("Terbaru");
+
+  // Read filter state from URL params (shareable)
+  const q        = searchParams.get("q") ?? "";
+  const tipe     = searchParams.get("tipe") ?? "Semua";
+  const status   = searchParams.get("status") ?? "Semua";
+  const kawasan  = searchParams.get("kawasan") ?? "Semua";
+  const hargaMax = searchParams.get("hargaMax") ?? "";
+  const lebarMin = searchParams.get("lebarMin") ?? "";
+  const hadap    = searchParams.get("hadap") ?? "Semua";
+  const siap     = searchParams.get("siap") ?? "Semua";
+  const carport  = searchParams.get("carport") ?? "Semua";
+  const sort     = searchParams.get("sort") ?? "Terbaru";
 
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(50);
+  const [perPage, setPerPage] = useState(Number(searchParams.get("perPage") ?? 50));
   const [selectedProp, setSelectedProp] = useState<Property | null>(null);
+
+  // Helper: update one URL param without losing others
+  const setParam = useCallback((key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (!value || value === "Semua") {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+    params.delete("page"); // reset page on filter change
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    setPage(1);
+  }, [searchParams, pathname, router]);
+
+  const setQ        = (v: string) => setParam("q", v);
+  const setTipe     = (v: string) => setParam("tipe", v);
+  const setStatus   = (v: string) => setParam("status", v);
+  const setKawasan  = (v: string) => setParam("kawasan", v);
+  const setHargaMax = (v: string) => setParam("hargaMax", v);
+  const setLebarMin = (v: string) => setParam("lebarMin", v);
+  const setHadap    = (v: string) => setParam("hadap", v);
+  const setSiap     = (v: string) => setParam("siap", v);
+  const setCarport  = (v: string) => setParam("carport", v);
+  const setSort     = (v: string) => setParam("sort", v);
 
   const filtered = useMemo(() => {
     let list = properties.filter((p) => {
@@ -102,6 +131,7 @@ export function PropertiesTable({ properties, role, showToast }: { properties: P
     if (sort === "Harga ↑") list = [...list].sort((a, b) => a.price - b.price);
     else if (sort === "Harga ↓") list = [...list].sort((a, b) => b.price - a.price);
     else if (sort === "Nama A-Z") list = [...list].sort((a, b) => a.nama_property.localeCompare(b.nama_property));
+    else if (sort === "Status") list = [...list].sort((a, b) => a.status.localeCompare(b.status));
     else list = [...list].sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
     return list;
   }, [properties, q, tipe, status, kawasan, hargaMax, lebarMin, hadap, siap, carport, sort]);
@@ -110,8 +140,8 @@ export function PropertiesTable({ properties, role, showToast }: { properties: P
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
 
   const reset = () => {
-    setQ(""); setTipe("Semua"); setStatus("Semua"); setKawasan("Semua");
-    setHargaMax(""); setLebarMin(""); setHadap("Semua"); setSiap("Semua"); setCarport("Semua");
+    router.replace(pathname, { scroll: false });
+    setPage(1);
   };
 
   const activeChips = [
@@ -187,18 +217,20 @@ export function PropertiesTable({ properties, role, showToast }: { properties: P
 
       {/* Table */}
       <div className="bg-[#FFFFFF] border border-[#E0E0E0] rounded-lg overflow-x-auto relative">
-         <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "900px" }}>
+         <table className="w-full text-left" style={{ tableLayout: "fixed", minWidth: "1100px" }}>
             <thead className="bg-[#F5F5F5] text-[12px] font-semibold text-[#6B6B6B] uppercase border-b border-[#E0E0E0]">
                <tr>
-                  <th className="px-4 py-3 w-[280px]">Nama Properti</th>
-                  <th className="px-4 py-3 w-[80px]">Tipe</th>
-                  <th className="px-4 py-3 w-[100px]">Ukuran</th>
-                  <th className="px-4 py-3 w-[80px]">Hadap</th>
-                  <th className="px-4 py-3 w-[140px]">Harga</th>
-                  <th className="px-4 py-3 w-[90px]">Status</th>
-                  <th className="px-4 py-3 w-[120px]">Siap</th>
-                  <th className="px-4 py-3 w-[80px] text-center">Carport</th>
-                  {role === "superadmin" && <th className="px-4 py-3 w-[80px]">Aksi</th>}
+                  <th className="px-4 py-3 w-[220px]">Nama Properti</th>
+                  <th className="px-4 py-3 w-[100px]">Kawasan</th>
+                  <th className="px-4 py-3 w-[70px]">Tipe</th>
+                  <th className="px-4 py-3 w-[95px]">Ukuran</th>
+                  <th className="px-4 py-3 w-[70px]">Hadap</th>
+                  <th className="px-4 py-3 w-[50px]">Tkt</th>
+                  <th className="px-4 py-3 w-[130px]">Harga</th>
+                  <th className="px-4 py-3 w-[80px]">Status</th>
+                  <th className="px-4 py-3 w-[110px]">Siap</th>
+                  <th className="px-4 py-3 w-[70px] text-center">Carport</th>
+                  {role === "superadmin" && <th className="px-4 py-3 w-[70px]">Aksi</th>}
                </tr>
             </thead>
             <tbody>
@@ -206,15 +238,17 @@ export function PropertiesTable({ properties, role, showToast }: { properties: P
                   <tr key={p.id} onClick={()=>setSelectedProp(p)} className="border-b border-[#E0E0E0] hover:bg-[#FAFAFA] cursor-pointer group">
                      <td className="px-4 py-3">
                         <div className="text-[14px] font-semibold text-[#1A1A1A] truncate">{p.nama_property}</div>
-                        <div className="text-[12px] text-[#6B6B6B] truncate">{p.kawasan} {p.group_name ? `- ${p.group_name}` : ''}</div>
+                        <div className="text-[12px] text-[#6B6B6B] truncate">{p.group_name || "-"}</div>
                      </td>
+                     <td className="px-4 py-3 text-[13px] text-[#1A1A1A] truncate">{p.kawasan}</td>
                      <td className="px-4 py-3">
                         <span className={cn("px-2 py-0.5 rounded text-[11px] font-medium", p.tipe === "Ruko" ? "bg-[#EFF6FF] text-[#1D4ED8]" : "bg-[#F5F3FF] text-[#7C3AED]")}>
                            {p.tipe}
                         </span>
                      </td>
-                     <td className="px-4 py-3 text-[13px] text-[#1A1A1A]">{p.lebar} × {p.panjang} m</td>
+                     <td className="px-4 py-3 text-[13px] text-[#1A1A1A]">{p.lebar} × {p.panjang}</td>
                      <td className="px-4 py-3 text-[13px] text-[#6B6B6B] truncate">{p.hadap.join(", ")}</td>
+                     <td className="px-4 py-3 text-[13px] text-[#1A1A1A]">{p.tingkat} Lt</td>
                      <td className="px-4 py-3 text-[13px] font-semibold text-[#C9A961]">{formatRupiah(p.price)}</td>
                      <td className="px-4 py-3">
                         <span className={cn("px-2 py-0.5 rounded text-[11px] font-medium block w-max", p.status === "in_stock" ? "bg-[#ECFDF5] text-[#16A34A]" : "bg-[#FEF2F2] text-[#B33A3A]")}>
@@ -264,8 +298,8 @@ export function PropertiesTable({ properties, role, showToast }: { properties: P
                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white rounded-xl max-w-[400px] w-full p-8 shadow-2xl text-center">
                   <AlertTriangle className="w-10 h-10 mx-auto mb-4 text-[#B33A3A]" />
                   <h3 className="text-[18px] font-semibold text-[#1A1A1A] mb-2">Hapus Properti</h3>
-                  <p className="text-[14px] text-[#6B6B6B] mb-2">Apakah Anda yakin ingin menghapus properti ini?</p>
-                  <p className="text-[14px] font-semibold text-[#1A1A1A] mb-8">&ldquo;{deleteName}&rdquo;</p>
+                  <p className="text-[14px] text-[#1A1A1A] font-semibold mb-2">Yakin hapus properti &ldquo;{deleteName}&rdquo;?</p>
+                  <p className="text-[13px] text-[#6B6B6B] mb-8">Tindakan ini tidak dapat dibatalkan.</p>
                   <div className="flex justify-center gap-3">
                      <button disabled={isPending} onClick={() => startTransition(doDelete)} className="font-semibold px-6 py-2.5 rounded text-[14px] text-white bg-[#B33A3A] disabled:opacity-70">{isPending ? "Menghapus..." : "Hapus"}</button>
                      <button disabled={isPending} onClick={() => setDeleteId(null)} className="text-[#6B6B6B] px-4 font-medium text-[14px]">Batal</button>

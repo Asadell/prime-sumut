@@ -5,6 +5,21 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import type { PropertyInsert, PropertyUpdate } from '@/types/database'
 
+// Validasi URL Google Maps
+function isValidMapsLink(url: string): boolean {
+  if (!url) return true // opsional, boleh kosong
+  try {
+    const parsed = new URL(url)
+    return (
+      parsed.hostname.includes('google.com') ||
+      parsed.hostname.includes('maps.app.goo.gl') ||
+      parsed.hostname.includes('goo.gl')
+    )
+  } catch {
+    return false
+  }
+}
+
 // Helper: catat audit log
 async function writeAuditLog(params: {
   table_name: string
@@ -87,6 +102,11 @@ export async function createPropertyAction(
 
     // Parse form data
     const hadapRaw = formData.get('hadap') as string
+    const mapsLink = (formData.get('maps_link') as string)?.trim() || null
+    if (mapsLink && !isValidMapsLink(mapsLink)) {
+      return { error: 'Link Maps harus berupa URL Google Maps yang valid.', success: false }
+    }
+
     const payload: PropertyInsert = {
       nama_property: (formData.get('nama_property') as string).trim(),
       group_name:    (formData.get('group_name') as string)?.trim() || null,
@@ -100,7 +120,7 @@ export async function createPropertyAction(
       carport:       formData.get('carport') === 'true',
       status:        formData.get('status') as 'in_stock' | 'sold_out',
       siap:          formData.get('siap') as 'siap_huni' | 'siap_kosong' | 'siap_huni_renovasi',
-      maps_link:     (formData.get('maps_link') as string)?.trim() || null,
+      maps_link:     mapsLink,
       unit:          (formData.get('unit') as string)?.trim() || null,
       catatan:       (formData.get('catatan') as string)?.trim() || null,
     }
@@ -148,6 +168,11 @@ export async function updatePropertyAction(
       .single()
 
     const hadapRaw = formData.get('hadap') as string
+    const mapsLinkUpdate = (formData.get('maps_link') as string)?.trim() || null
+    if (mapsLinkUpdate && !isValidMapsLink(mapsLinkUpdate)) {
+      return { error: 'Link Maps harus berupa URL Google Maps yang valid.', success: false }
+    }
+
     const updates: PropertyUpdate = {
       nama_property: (formData.get('nama_property') as string).trim(),
       group_name:    (formData.get('group_name') as string)?.trim() || null,
@@ -161,7 +186,7 @@ export async function updatePropertyAction(
       carport:       formData.get('carport') === 'true',
       status:        formData.get('status') as 'in_stock' | 'sold_out',
       siap:          formData.get('siap') as 'siap_huni' | 'siap_kosong' | 'siap_huni_renovasi',
-      maps_link:     (formData.get('maps_link') as string)?.trim() || null,
+      maps_link:     mapsLinkUpdate,
       unit:          (formData.get('unit') as string)?.trim() || null,
       catatan:       (formData.get('catatan') as string)?.trim() || null,
     }

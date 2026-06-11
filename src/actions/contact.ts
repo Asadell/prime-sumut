@@ -44,20 +44,77 @@ export async function submitContactAction(
       return { error: 'Nomor HP minimal 10 digit.', success: false }
     }
 
+    const jenisProperti   = (formData.get('jenis_properti') as string) || null
+    const kisaranAnggaran = (formData.get('kisaran_anggaran') as string) || null
+
     const { error } = await admin.from('contact_messages').insert({
       nama,
       email,
       nomor_hp:         nomorHp,
-      jenis_properti:   (formData.get('jenis_properti') as string) || null,
-      kisaran_anggaran: (formData.get('kisaran_anggaran') as string) || null,
+      jenis_properti:   jenisProperti,
+      kisaran_anggaran: kisaranAnggaran,
       pesan,
       ip_address:       ip,
     })
 
     if (error) return { error: 'Gagal mengirim pesan. Coba lagi.', success: false }
 
+    // Kirim email notifikasi ke admin
+    await sendEmailNotification({ nama, email, nomorHp, pesan, jenisProperti, kisaranAnggaran })
+
     return { error: null, success: true }
   } catch {
     return { error: 'Terjadi kesalahan. Coba lagi.', success: false }
+  }
+}
+
+// Kirim email notifikasi ke admin via Resend
+async function sendEmailNotification(data: {
+  nama: string
+  email: string
+  nomorHp: string
+  pesan: string
+  jenisProperti: string | null
+  kisaranAnggaran: string | null
+}) {
+  const apiKey     = process.env.RESEND_API_KEY
+  const adminEmail = process.env.ADMIN_EMAIL
+
+  // Jika env belum diisi, skip tanpa error (tidak blokir user)
+  if (!apiKey || apiKey === 'RESEND_API_KEY_PLACEHOLDER' || !adminEmail) return
+
+  try {
+    const { Resend } = await import('resend')
+    const resend = new Resend(apiKey)
+
+    await resend.emails.send({
+      from:    'Prime Property <noreply@primeproperty.id>',
+      to:      adminEmail,
+      subject: `[Prime Property] Pesan baru dari ${data.nama}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1A1A1A;">
+          <div style="background: #1A1A1A; padding: 20px 24px; border-radius: 8px 8px 0 0;">
+            <h2 style="color: #C9A961; margin: 0; font-size: 18px;">Pesan Kontak Baru</h2>
+            <p style="color: #ffffff80; margin: 4px 0 0; font-size: 13px;">Prime Property · Portal Internal</p>
+          </div>
+          <div style="border: 1px solid #E0E0E0; border-top: none; border-radius: 0 0 8px 8px; padding: 24px;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0; color: #6B6B6B; font-size: 13px; width: 140px;">Nama</td><td style="padding: 8px 0; font-size: 13px; font-weight: 600;">${data.nama}</td></tr>
+              <tr><td style="padding: 8px 0; color: #6B6B6B; font-size: 13px;">Email</td><td style="padding: 8px 0; font-size: 13px;"><a href="mailto:${data.email}" style="color: #C9A961;">${data.email}</a></td></tr>
+              <tr><td style="padding: 8px 0; color: #6B6B6B; font-size: 13px;">Nomor HP</td><td style="padding: 8px 0; font-size: 13px;"><a href="https://wa.me/${data.nomorHp.replace(/\D/g, '')}" style="color: #C9A961;">${data.nomorHp}</a></td></tr>
+              ${data.jenisProperti ? `<tr><td style="padding: 8px 0; color: #6B6B6B; font-size: 13px;">Jenis Properti</td><td style="padding: 8px 0; font-size: 13px;">${data.jenisProperti}</td></tr>` : ''}
+              ${data.kisaranAnggaran ? `<tr><td style="padding: 8px 0; color: #6B6B6B; font-size: 13px;">Kisaran Anggaran</td><td style="padding: 8px 0; font-size: 13px;">${data.kisaranAnggaran}</td></tr>` : ''}
+            </table>
+            <div style="margin-top: 16px; padding: 16px; background: #F5F5F5; border-radius: 6px; border-left: 3px solid #C9A961;">
+              <p style="margin: 0; font-size: 13px; color: #6B6B6B; margin-bottom: 6px;">Pesan:</p>
+              <p style="margin: 0; font-size: 14px; line-height: 1.6;">${data.pesan.replace(/\n/g, '<br>')}</p>
+            </div>
+          </div>
+        </div>
+      `,
+    })
+  } catch {
+    // Gagal kirim email tidak boleh blokir response ke user
+    console.error('[contact] Failed to send email notification')
   }
 }
